@@ -6,25 +6,42 @@ from datetime import datetime
 # 🔑 API Key do YouTube (definida no GitHub Secrets)
 API_KEY = os.getenv("YOUTUBE_API_KEY")
 CHANNEL_HANDLE = "cortes-leonenilceoficial4101"  # handle do canal (sem o "@")
-OUTPUT_FILE = "monitoramento_cortesleonnilce.xlsx"
+OUTPUT_DIR = "dados"  # pasta onde o Excel será salvo
+OUTPUT_FILE = os.path.join(OUTPUT_DIR, "monitoramento_cortesleonnilce.xlsx")
 
-# Conectar na API do YouTube
+# Cria a pasta se não existir
+if not os.path.exists(OUTPUT_DIR):
+    os.makedirs(OUTPUT_DIR)
+
+# Conectar na API do YouTube usando apenas API Key
 youtube = build("youtube", "v3", developerKey=API_KEY)
 
-def get_channel_stats(handle):
+def get_channel_stats_by_handle(handle):
     """
-    Busca as estatísticas de um canal a partir do handle (@nome)
+    Busca estatísticas do canal a partir do handle usando search()
     """
-    request = youtube.channels().list(
-        part="snippet,statistics",
-        forHandle=handle
+    # Busca o canal pelo handle
+    request = youtube.search().list(
+        part="snippet",
+        q=f"@{handle}",
+        type="channel",
+        maxResults=1
     )
     response = request.execute()
-    
+
     if "items" not in response or not response["items"]:
-        raise Exception("Canal não encontrado.")
+        raise Exception("Canal não encontrado via search()")
     
+    channel_id = response["items"][0]["snippet"]["channelId"]
+
+    # Agora pega stats usando channelId
+    request = youtube.channels().list(
+        part="snippet,statistics",
+        id=channel_id
+    )
+    response = request.execute()
     data = response["items"][0]
+
     return {
         "nome": data["snippet"]["title"],
         "inscritos": int(data["statistics"].get("subscriberCount", 0)),
@@ -62,7 +79,7 @@ def get_latest_videos(channel_id, max_results=5):
                 "views": int(stats.get("viewCount", 0)),
                 "likes": int(stats.get("likeCount", 0)),
                 "comentarios": int(stats.get("commentCount", 0)),
-                "compartilhamentos": stats.get("shareCount", "N/A") 
+                "compartilhamentos": stats.get("shareCount", "N/A")  # geralmente não disponível
             })
     return video_stats
 
@@ -77,7 +94,7 @@ def save_to_excel(data, filename):
     df.to_excel(filename, index=False)
 
 def coletar_dados():
-    stats = get_channel_stats(CHANNEL_HANDLE)
+    stats = get_channel_stats_by_handle(CHANNEL_HANDLE)
     videos = get_latest_videos(stats["canal_id"])
 
     coleta = {
