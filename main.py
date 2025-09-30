@@ -3,18 +3,21 @@ import pandas as pd
 from googleapiclient.discovery import build
 from datetime import datetime
 
-# 🔑 API Key do YouTube (crie no Google Cloud e cole aqui como variável de ambiente no Render)
+# 🔑 API Key do YouTube (definida no GitHub Secrets)
 API_KEY = os.getenv("YOUTUBE_API_KEY")
-CHANNEL_USERNAME = "cortes-leonenilceoficial4101"
+CHANNEL_HANDLE = "cortes-leonenilceoficial4101"  # handle do canal (sem o "@")
 OUTPUT_FILE = "monitoramento_cortesleonnilce.xlsx"
 
 # Conectar na API do YouTube
 youtube = build("youtube", "v3", developerKey=API_KEY)
 
-def get_channel_stats(username):
+def get_channel_stats(handle):
+    """
+    Busca as estatísticas de um canal a partir do handle (@nome)
+    """
     request = youtube.channels().list(
         part="snippet,statistics",
-        forUsername=username
+        forHandle=handle
     )
     response = request.execute()
     
@@ -31,6 +34,9 @@ def get_channel_stats(username):
     }
 
 def get_latest_videos(channel_id, max_results=5):
+    """
+    Pega os últimos vídeos do canal com estatísticas básicas
+    """
     request = youtube.search().list(
         part="id",
         channelId=channel_id,
@@ -56,11 +62,14 @@ def get_latest_videos(channel_id, max_results=5):
                 "views": int(stats.get("viewCount", 0)),
                 "likes": int(stats.get("likeCount", 0)),
                 "comentarios": int(stats.get("commentCount", 0)),
-                "compartilhamentos": stats.get("shareCount", "N/A")  # API do YouTube nem sempre expõe isso
+                "compartilhamentos": stats.get("shareCount", "N/A") 
             })
     return video_stats
 
 def save_to_excel(data, filename):
+    """
+    Salva os dados em Excel, acumulando histórico
+    """
     df = pd.DataFrame(data)
     if os.path.exists(filename):
         old_df = pd.read_excel(filename)
@@ -68,7 +77,7 @@ def save_to_excel(data, filename):
     df.to_excel(filename, index=False)
 
 def coletar_dados():
-    stats = get_channel_stats(CHANNEL_USERNAME)
+    stats = get_channel_stats(CHANNEL_HANDLE)
     videos = get_latest_videos(stats["canal_id"])
 
     coleta = {
