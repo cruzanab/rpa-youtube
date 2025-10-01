@@ -28,3 +28,10 @@ jobs:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: |
           python main.py
+
+      - name: Fazer upload do Excel como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dados-youtube
+          path: dados/
+          retention-days: 30
