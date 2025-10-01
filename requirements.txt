@@ -1,4 +1,30 @@
-numpy==1.24.3
-pandas==2.0.3
-openpyxl==3.1.2
-google-api-python-client==2.88.0
+name: YouTube Monitor
+
+on:
+  schedule:
+    # roda às 22h da noite a cada 2 dias
+    - cron: "0 22 */2 * *"
+  workflow_dispatch: # permite rodar manualmente também
+
+jobs:
+  run-rpa:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositório
+        uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependências
+        run: |
+          pip install -r requirements.txt
+
+      - name: Rodar script RPA
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          python main.py
