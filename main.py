@@ -2,8 +2,8 @@ import os
 import pandas as pd
 from googleapiclient.discovery import build
 from datetime import datetime
+import google.auth
 
-# 🔑 API Key do YouTube (definida no GitHub Secrets)
 API_KEY = os.getenv("YOUTUBE_API_KEY")
 CHANNEL_HANDLE = "cortes-leonenilceoficial4101"  # handle do canal (sem o "@")
 OUTPUT_DIR = "dados"  # pasta onde o Excel será salvo
@@ -13,8 +13,15 @@ OUTPUT_FILE = os.path.join(OUTPUT_DIR, "monitoramento_cortesleonnilce.xlsx")
 if not os.path.exists(OUTPUT_DIR):
     os.makedirs(OUTPUT_DIR)
 
-# Conectar na API do YouTube usando apenas API Key
-youtube = build("youtube", "v3", developerKey=API_KEY)
+# ⚠️ PROBLEMA AQUI: Remover qualquer autenticação padrão
+
+try:
+    credentials, project = google.auth.default()
+    # Forçar o uso apenas da API Key
+    youtube = build("youtube", "v3", developerKey=API_KEY)
+except:
+    # Se falhar, usar apenas API Key
+    youtube = build("youtube", "v3", developerKey=API_KEY)
 
 def get_channel_stats_by_handle(handle):
     """
